@@ -4,8 +4,11 @@ from pyhap.accessory import Accessory
 from pyhap.const import CATEGORY_DOOR_LOCK
 
 from service import Service
+from time import sleep
+import serial
 
 log = logging.getLogger()
+lock_duration_seconds = 2
 
 
 # Lock class performs no logic, forwarding requests to Service class
@@ -119,10 +122,21 @@ class Lock(Accessory):
         log.info("get_lock_target_state")
         return self._lock_target_state
 
+    async def delayed_lock(self, lock_duration_seconds: int):
+        sleep(lock_duration_seconds)
+        await self.set_lock_target_state(1)
+
     def set_lock_target_state(self, value):
         log.info(f"set_lock_target_state {value}")
         self._lock_target_state = self._lock_current_state = value
         self.lock_current_state.set_value(self._lock_current_state, should_notify=True)
+
+        is_unlock = value == 0
+        if is_unlock:
+            ser = serial.Serial('/dev/ttyUSB0')
+            ser.write(f'UNLOCK {lock_duration_seconds}000\n'.encode())
+            ser.close()
+            self.driver.add_job(self.delayed_lock)
         return self._lock_target_state
 
     def get_lock_version(self):
