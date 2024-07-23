@@ -122,7 +122,7 @@ class Lock(Accessory):
         log.info("get_lock_target_state")
         return self._lock_target_state
 
-    async def delayed_lock(self, lock_duration_seconds: int):
+    async def delayed_lock(self):
         sleep(lock_duration_seconds)
         await self.set_lock_target_state(1)
 
